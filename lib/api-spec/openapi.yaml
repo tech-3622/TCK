@@ -1,0 +1,890 @@
+openapi: 3.1.0
+info:
+  # Do not change the title; generated import paths depend on it.
+  title: Api
+  version: 0.1.0
+  description: TCK Treasury member wallet and administration API.
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Member account and session operations
+  - name: wallet
+    description: Wallet balances and TCK trading
+  - name: member
+    description: Member profile, deposits, and withdrawals
+  - name: admin
+    description: Administrator operations
+  - name: storage
+    description: Private document uploads
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/me:
+    get:
+      operationId: getSession
+      tags: [auth]
+      summary: Get the signed-in member session
+      responses:
+        "200":
+          description: Current session or signed-out state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+  /auth/register:
+    post:
+      operationId: registerMember
+      tags: [auth]
+      summary: Create a member account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationInput"
+      responses:
+        "201":
+          description: Account created and signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "400":
+          description: Invalid registration details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Username or email is already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /auth/login:
+    post:
+      operationId: loginMember
+      tags: [auth]
+      summary: Sign in to a member account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /auth/logout:
+    post:
+      operationId: logoutMember
+      tags: [auth]
+      summary: Sign out of the current account
+      responses:
+        "200":
+          description: Signed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResponse"
+  /dashboard:
+    get:
+      operationId: getMemberDashboard
+      tags: [wallet]
+      summary: Get balances, rate, wealth history, and recent activity
+      responses:
+        "200":
+          description: Member dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResponse"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /wallet:
+    get:
+      operationId: getWallet
+      tags: [wallet]
+      summary: Get wallet balances, live rate, and recent trades
+      responses:
+        "200":
+          description: Wallet view
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletResponse"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /wallet/trades:
+    post:
+      operationId: createTrade
+      tags: [wallet]
+      summary: Buy or sell TCK at the current administrator-controlled rate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TradeInput"
+      responses:
+        "201":
+          description: Trade completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trade"
+        "400":
+          description: Invalid amount or insufficient balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /bank:
+    get:
+      operationId: getBankDetails
+      tags: [member]
+      summary: Get deposit transfer instructions
+      responses:
+        "200":
+          description: Current deposit account details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankDetails"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /deposits:
+    get:
+      operationId: listMemberDeposits
+      tags: [member]
+      summary: List the current member's deposit requests
+      responses:
+        "200":
+          description: Deposit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deposit"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    post:
+      operationId: createDeposit
+      tags: [member]
+      summary: Submit a deposit with proof of payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositInput"
+      responses:
+        "201":
+          description: Deposit request submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deposit"
+        "400":
+          description: Invalid deposit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /withdrawals:
+    get:
+      operationId: listMemberWithdrawals
+      tags: [member]
+      summary: List the current member's withdrawal requests
+      responses:
+        "200":
+          description: Withdrawal history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Withdrawal"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    post:
+      operationId: createWithdrawal
+      tags: [member]
+      summary: Request a withdrawal using the member's secure PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawalInput"
+      responses:
+        "201":
+          description: Withdrawal request submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+        "400":
+          description: Invalid request, PIN, or insufficient balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [member]
+      summary: Get the current member's profile and verification status
+      responses:
+        "200":
+          description: Member profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    patch:
+      operationId: updateProfile
+      tags: [member]
+      summary: Update the member's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdateInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "400":
+          description: Invalid profile update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /profile/pin:
+    put:
+      operationId: setWithdrawalPin
+      tags: [member]
+      summary: Set or update the member's withdrawal PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PinInput"
+      responses:
+        "200":
+          description: PIN saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResponse"
+        "400":
+          description: Invalid PIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /profile/kyc:
+    post:
+      operationId: submitKyc
+      tags: [member]
+      summary: Submit identity document for administrator verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KycInput"
+      responses:
+        "200":
+          description: Verification request submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "400":
+          description: Invalid verification request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Get admin overview and pending member actions
+      responses:
+        "200":
+          description: Administration overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/deposits/{id}/decision:
+    patch:
+      operationId: decideDeposit
+      tags: [admin]
+      summary: Approve or reject a pending deposit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionInput"
+      responses:
+        "200":
+          description: Deposit decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeposit"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Deposit not found or already handled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/withdrawals/{id}/decision:
+    patch:
+      operationId: decideWithdrawal
+      tags: [admin]
+      summary: Approve or reject a pending withdrawal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionInput"
+      responses:
+        "200":
+          description: Withdrawal decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWithdrawal"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Withdrawal not found or already handled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/users/{id}/verification:
+    patch:
+      operationId: decideUserVerification
+      tags: [admin]
+      summary: Approve or reject a member's identity verification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionInput"
+      responses:
+        "200":
+          description: Verification decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Member not found or not awaiting verification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/market:
+    get:
+      operationId: getAdminMarket
+      tags: [admin]
+      summary: Get current TCK exchange rate and adjustment history
+      responses:
+        "200":
+          description: Market settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMarketResponse"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/market/adjustments:
+    post:
+      operationId: adjustMarketRate
+      tags: [admin]
+      summary: Increase or decrease the TCK exchange rate by a percentage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketAdjustmentInput"
+      responses:
+        "201":
+          description: Exchange rate adjusted and saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketAdjustment"
+        "400":
+          description: Invalid adjustment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/bank:
+    put:
+      operationId: updateBankDetails
+      tags: [admin]
+      summary: Update the deposit bank instructions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BankDetailsInput"
+      responses:
+        "200":
+          description: Updated bank instructions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankDetails"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a signed private upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Invalid upload metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    ActionResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+    User:
+      type: object
+      required: [id, username, email, isAdmin, kycStatus, nairaBalance, tckBalance, hasWithdrawalPin, createdAt]
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string, format: email }
+        isAdmin: { type: boolean }
+        country: { type: ["string", "null"] }
+        kycStatus: { type: string, enum: [Unverified, Pending, Verified, Rejected] }
+        kycDocumentPath: { type: ["string", "null"] }
+        profileImagePath: { type: ["string", "null"] }
+        nairaBalance: { type: number }
+        tckBalance: { type: number }
+        hasWithdrawalPin: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    SessionResponse:
+      type: object
+      required: [authenticated, user]
+      properties:
+        authenticated: { type: boolean }
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/User"
+            - type: "null"
+    RegistrationInput:
+      type: object
+      required: [username, email, password]
+      properties:
+        username: { type: string, minLength: 3, maxLength: 32 }
+        email: { type: string, format: email, maxLength: 255 }
+        password: { type: string, minLength: 10, maxLength: 128 }
+    LoginInput:
+      type: object
+      required: [identifier, password]
+      properties:
+        identifier: { type: string, minLength: 1, maxLength: 255 }
+        password: { type: string, minLength: 1, maxLength: 128 }
+    DashboardResponse:
+      type: object
+      required: [user, exchangeRate, totalValue, wealthHistory, recentTrades]
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        exchangeRate: { type: number }
+        totalValue: { type: number }
+        wealthHistory:
+          type: array
+          items: { $ref: "#/components/schemas/WealthPoint" }
+        recentTrades:
+          type: array
+          items: { $ref: "#/components/schemas/Trade" }
+    WealthPoint:
+      type: object
+      required: [totalValue, createdAt]
+      properties:
+        totalValue: { type: number }
+        createdAt: { type: string, format: date-time }
+    WalletResponse:
+      type: object
+      required: [user, exchangeRate, trades]
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        exchangeRate: { type: number }
+        trades:
+          type: array
+          items: { $ref: "#/components/schemas/Trade" }
+    Trade:
+      type: object
+      required: [id, side, nairaAmount, tckAmount, rate, createdAt]
+      properties:
+        id: { type: integer }
+        side: { type: string, enum: [buy, sell] }
+        nairaAmount: { type: number }
+        tckAmount: { type: number }
+        rate: { type: number }
+        createdAt: { type: string, format: date-time }
+    TradeInput:
+      type: object
+      required: [side, amount]
+      properties:
+        side: { type: string, enum: [buy, sell] }
+        amount: { type: number, exclusiveMinimum: 0 }
+    Deposit:
+      type: object
+      required: [id, amount, proofPath, status, createdAt]
+      properties:
+        id: { type: integer }
+        amount: { type: number }
+        proofPath: { type: string }
+        status: { type: string, enum: [Pending, Approved, Rejected] }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: ["string", "null"], format: date-time }
+    AdminDeposit:
+      allOf:
+        - $ref: "#/components/schemas/Deposit"
+        - type: object
+          required: [username]
+          properties:
+            username: { type: string }
+    DepositInput:
+      type: object
+      required: [amount, proofPath]
+      properties:
+        amount: { type: number, exclusiveMinimum: 0 }
+        proofPath: { type: string, minLength: 1 }
+    Withdrawal:
+      type: object
+      required: [id, amount, bankName, accountNumber, accountName, status, createdAt]
+      properties:
+        id: { type: integer }
+        amount: { type: number }
+        bankName: { type: string }
+        accountNumber: { type: string }
+        accountName: { type: string }
+        status: { type: string, enum: [Pending, Approved, Rejected] }
+        createdAt: { type: string, format: date-time }
+    AdminWithdrawal:
+      allOf:
+        - $ref: "#/components/schemas/Withdrawal"
+        - type: object
+          required: [username]
+          properties:
+            username: { type: string }
+    WithdrawalInput:
+      type: object
+      required: [amount, bankName, accountNumber, accountName, pin]
+      properties:
+        amount: { type: number, exclusiveMinimum: 0 }
+        bankName: { type: string, minLength: 2, maxLength: 100 }
+        accountNumber: { type: string, minLength: 6, maxLength: 30 }
+        accountName: { type: string, minLength: 2, maxLength: 120 }
+        pin: { type: string, minLength: 4, maxLength: 6 }
+    ProfileResponse:
+      type: object
+      required: [user]
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+    ProfileUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        username: { type: string, minLength: 3, maxLength: 32 }
+        country: { type: ["string", "null"], maxLength: 100 }
+        profileImagePath: { type: ["string", "null"], maxLength: 512 }
+    PinInput:
+      type: object
+      required: [pin]
+      properties:
+        pin: { type: string, minLength: 4, maxLength: 6, pattern: "^[0-9]+$" }
+    KycInput:
+      type: object
+      required: [country, documentPath]
+      properties:
+        country: { type: string, minLength: 2, maxLength: 100 }
+        documentPath: { type: string, minLength: 1, maxLength: 512 }
+    BankDetails:
+      type: object
+      required: [bankName, accountNumber, accountName]
+      properties:
+        bankName: { type: string }
+        accountNumber: { type: string }
+        accountName: { type: string }
+    BankDetailsInput:
+      type: object
+      required: [bankName, accountNumber, accountName]
+      properties:
+        bankName: { type: string, minLength: 2, maxLength: 100 }
+        accountNumber: { type: string, minLength: 6, maxLength: 30 }
+        accountName: { type: string, minLength: 2, maxLength: 120 }
+    DecisionInput:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approve, reject] }
+    AdminUser:
+      type: object
+      required: [id, username, email, kycStatus, createdAt]
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string, format: email }
+        country: { type: ["string", "null"] }
+        kycStatus: { type: string, enum: [Unverified, Pending, Verified, Rejected] }
+        kycDocumentPath: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    AdminOverview:
+      type: object
+      required: [exchangeRate, memberCount, pendingDepositCount, pendingWithdrawalCount, pendingKycCount, deposits, withdrawals, users]
+      properties:
+        exchangeRate: { type: number }
+        memberCount: { type: integer }
+        pendingDepositCount: { type: integer }
+        pendingWithdrawalCount: { type: integer }
+        pendingKycCount: { type: integer }
+        deposits:
+          type: array
+          items: { $ref: "#/components/schemas/AdminDeposit" }
+        withdrawals:
+          type: array
+          items: { $ref: "#/components/schemas/AdminWithdrawal" }
+        users:
+          type: array
+          items: { $ref: "#/components/schemas/AdminUser" }
+    MarketAdjustment:
+      type: object
+      required: [id, direction, percentage, previousRate, newRate, adminUsername, createdAt]
+      properties:
+        id: { type: integer }
+        direction: { type: string, enum: [increase, decrease] }
+        percentage: { type: number }
+        previousRate: { type: number }
+        newRate: { type: number }
+        adminUsername: { type: string }
+        createdAt: { type: string, format: date-time }
+    AdminMarketResponse:
+      type: object
+      required: [currentRate, adjustments]
+      properties:
+        currentRate: { type: number }
+        adjustments:
+          type: array
+          items: { $ref: "#/components/schemas/MarketAdjustment" }
+    MarketAdjustmentInput:
+      type: object
+      required: [direction, percentage]
+      properties:
+        direction: { type: string, enum: [increase, decrease] }
+        percentage: { type: number, exclusiveMinimum: 0, maximum: 1000 }
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        size: { type: integer, minimum: 1, maximum: 10485760 }
+        contentType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp, application/pdf]
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL: { type: string, format: uri }
+        objectPath: { type: string }

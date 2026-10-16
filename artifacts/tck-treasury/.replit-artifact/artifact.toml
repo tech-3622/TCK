@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "TCK Treasury"
+description = "A secure wallet and TCK exchange platform for members, with deposits, withdrawals, profile verification, portfolio tracking, and admin controls for the exchange rate."
+version = "1.0.0"
+id = "artifacts/tck-treasury"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24873
+
+[services.development]
+run = "pnpm --filter @workspace/tck-treasury run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tck-treasury", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/tck-treasury/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24873"
+BASE_PATH = "/"
